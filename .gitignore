@@ -1,1 +1,30 @@
-git add .
+# =============================
+# Ignorar arquivos sensíveis
+# =============================
+
+# Arquivo de variáveis de ambiente
+.env
+
+# =============================
+# Ignorar arquivos Python temporários
+# =============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+
+# =============================
+# Ignorar arquivos do Docker (opcional)
+# =============================
+docker-compose.override.yml
+
+# =============================
+# Ignorar arquivos do VS Code
+# =============================
+.vscode/
+
+# =============================
+# Ignorar outros arquivos de sistema
+# =============================
+.DS_Store
