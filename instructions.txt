@@ -1,0 +1,11 @@
+# Guia para rodar a API do mapa
+
+
+## 1. Criar arquivo .env ⚠️ ⚠️ ⚠️ 
+Na raiz do projeto, crie `.env` com as variáveis no Notion
+> Não subir no GitHub
+
+
+## 2. Build do container
+```bash
+docker build -t map-api .
