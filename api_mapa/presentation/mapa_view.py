@@ -36,11 +36,23 @@ def darken_color(hex_color, factor=0.7):
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
-def generate_map_object(initial_coords=None) -> folium.Map:
-    geojson_data = load_geojson()
+def gerar_popup_artigo(artigo):
+    html = f"""
+<h4>{artigo['titulo']}</h4>
+<p>{artigo['conteudo'][:200]}...</p>
+<p><strong>Local:</strong> {artigo['local']}</p>
+"""
+    return html
 
+
+def generate_map_object(initial_coords=None) -> folium.Map: 
+    """Função que gera um objeto mapa em representação html do Folium.
+        Percorre cada artigo e demonstra ele por pop-up no mapa."""
+    geojson_data = load_geojson()
     if initial_coords is None:
         initial_coords = [-14.235, -51.9253]
+
+    brazil_bounds = [[-34.0, -74.0], [5.5, -32.0]]
 
     m = folium.Map(
         location=initial_coords,
@@ -48,7 +60,9 @@ def generate_map_object(initial_coords=None) -> folium.Map:
         tiles="OpenStreetMap",
         min_zoom=4,
         max_zoom=6,
+        max_bounds=True,
     )
+    m.fit_bounds(brazil_bounds)
 
     def style_function(feature):
         regiao = feature["properties"].get("regiao", "default")
@@ -70,77 +84,71 @@ def generate_map_object(initial_coords=None) -> folium.Map:
             "fillOpacity": 0.9,
         }
 
-    popup = folium.GeoJsonPopup(
+    popup_geojson = folium.GeoJsonPopup(
         fields=["name", "regiao"],
-        aliases=[
-            "<strong>Estado:</strong> ", 
-            "<strong>Região:</strong> "
-        ],
+        aliases=["<strong>Estado:</strong> ", "<strong>Região:</strong> "],
         localize=True,
         labels=True,
-        style=(
-            "background-color: white; "
-            "border: 1px solid gray; "
-            "border-radius: 8px; "
-            "font-size: 13px; "
-            "box-shadow: 3px 3px 15px rgba(0,0,0,0.3);"
-        ),
-        parse_html=True
+        parse_html=True,
     )
 
-    folium.GeoJson(
+    geo_layer = folium.GeoJson(
         geojson_data,
         name="Estados do Brasil",
         style_function=style_function,
         highlight_function=highlight_function,
-        popup=popup
-    ).add_to(m)
-
-    icon_url = "https://leafletjs.com/examples/custom-icons/leaf-red.png"
-    shadow_url = "https://leafletjs.com/examples/custom-icons/leaf-shadow.png"
-
-    icon = folium.CustomIcon(
-        icon_url,
-        icon_size=(38, 95),
-        icon_anchor=(22, 94),
-        shadow_image=shadow_url,
-        shadow_size=(50, 64),
-        shadow_anchor=(4, 62),
-        popup_anchor=(-3, -76),
+        popup=popup_geojson,
     )
+    geo_layer.add_to(m)
 
-# quando recebermos os artigos e suas coordenadas da camada de artigo haverá um for each aqui
-    folium.Marker(
-        location=initial_coords,
-        icon=icon,
-        popup="Exemplo Artigo",
-    ).add_to(m)
+    artigos = [
+        {
+            "id": 23,
+            "titulo": "O frevo",
+            "conteudo": "O frevo surgiu no início do século XX...",
+            "local": "Recife - PE",
+            "coordenadas": [-8.0476, -34.8770],
+        },
+        {
+            "id": 24,
+            "titulo": "Maracatu",
+            "conteudo": "O maracatu é uma manifestação musical...",
+            "local": "São Paulo - SP",
+            "coordenadas": [-23.5505, -46.6333],
+        },
+    ]
 
-    css = """
-    <style>
-    .leaflet-interactive:focus { outline: none !important; }
-    .leaflet-popup-content-wrapper { box-shadow: 3px 3px 15px rgba(0,0,0,0.3) !important; }
-    .leaflet-popup-tip { background: white; }
-    </style>
-    """
-    m.get_root().html.add_child(Element(css))
+    icon_url = "https://leafletjs.com/examples/custom-icons/leaf-orange.png"
+    artigos_layer = folium.FeatureGroup(name="Artigos")
+    artigos_layer.add_to(m)
+
+    for artigo in artigos:
+        popup = folium.Popup(gerar_popup_artigo(artigo), parse_html=True)
+        icon = folium.CustomIcon(icon_url, icon_size=(32, 32), icon_anchor=(16, 32))
+        folium.Marker(location=artigo["coordenadas"], popup=popup, icon=icon).add_to(
+            artigos_layer
+        )
+
+    folium.LayerControl().add_to(m)
+
     return m.get_root()._repr_html_()
-    # para teste, gera o objeto mapa e não html 
+    # para teste, gera o objeto mapa e não html
     # return m
+
 
 # Para teste de geração
 # if __name__ == "__main__":
-    # MAP_TEMPLATES_DIR = PROJECT_ROOT / "api_mapa" / "map_templates"
-    # MAP_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+#     MAP_TEMPLATES_DIR = PROJECT_ROOT / "api_mapa" / "map_templates"
+#     MAP_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 
-    # output_filename = MAP_TEMPLATES_DIR / "mapa_teste.html"
-    # print("Gerando mapa...")
+#     output_filename = MAP_TEMPLATES_DIR / "mapa_teste.html"
+#     print("Gerando mapa...")
 
-    # try:
-    #     mapa = generate_map_object()
-    #     mapa.save(str(output_filename))
-    #     print(f"Mapa gerado com sucesso: {output_filename}")
-    # except FileNotFoundError as e:
-    #     print(f"Erro: {e}")
-    # except Exception as e:
-    #     print(f"Erro inesperado: {e}")
+#     try:
+#         mapa = generate_map_object()
+#         mapa.save(str(output_filename))
+#         print(f"Mapa gerado com sucesso: {output_filename}")
+#     except FileNotFoundError as e:
+#         print(f"Erro: {e}")
+#     except Exception as e:
+#         print(f"Erro inesperado: {e}")
